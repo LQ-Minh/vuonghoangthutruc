@@ -5155,6 +5155,97 @@
       --framer-text-stroke-width: initial;
       --framer-text-transform: none
     }
+
+    /* === CUSTOM SCROLL ANIMATIONS === */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(60px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-60px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(60px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Elements waiting to be animated */
+    .anim-hidden {
+      opacity: 0;
+    }
+
+    /* Animation classes applied by IntersectionObserver */
+    .anim-fade-in-up {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .anim-fade-in-left {
+      animation: fadeInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .anim-fade-in-right {
+      animation: fadeInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .anim-fade-in {
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    .anim-scale-in {
+      animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Stagger delays for child elements */
+    .anim-delay-1 { animation-delay: 0.1s; }
+    .anim-delay-2 { animation-delay: 0.2s; }
+    .anim-delay-3 { animation-delay: 0.3s; }
+    .anim-delay-4 { animation-delay: 0.4s; }
+    .anim-delay-5 { animation-delay: 0.5s; }
+    .anim-delay-6 { animation-delay: 0.6s; }
+    .anim-delay-7 { animation-delay: 0.7s; }
+    .anim-delay-8 { animation-delay: 0.8s; }
+
   </style><!-- Start of headEnd -->
 
   <!-- End of headEnd -->
@@ -7208,6 +7299,116 @@
   <!-- Start of bodyEnd -->
 
   <!-- End of bodyEnd -->
+
+  <!-- SCROLL ANIMATIONS -->
+  <script>
+    (function() {
+      // Configuration: which sections/elements to animate and how
+      var animConfig = [
+        // Hero section - immediate fade in on load
+        { selector: 'section[data-framer-name="Hero"]', anim: 'anim-fade-in-up', delay: 0 },
+
+        // Hero content children - stagger
+        { selector: 'section[data-framer-name="Hero"] header', anim: 'anim-fade-in-up', stagger: true, staggerDelay: 150 },
+
+        // About section
+        { selector: 'section[data-framer-name="About"]', anim: 'anim-fade-in-up', delay: 0 },
+
+        // About section - Education items stagger
+        { selector: 'section[data-framer-name="About"] [data-framer-name="Education"] > div', anim: 'anim-fade-in-up', stagger: true, staggerDelay: 100 },
+
+        // About section - other subsections
+        { selector: 'section[data-framer-name="About"] [data-framer-name="About"] > div', anim: 'anim-fade-in-up', stagger: true, staggerDelay: 100 },
+
+        // Projects section
+        { selector: 'section[data-framer-name="Projects"]', anim: 'anim-fade-in-up', delay: 0 },
+
+        // Project cards stagger
+        { selector: 'section[data-framer-name="Projects"] [data-framer-name="Projects"] > div', anim: 'anim-fade-in-up', stagger: true, staggerDelay: 200 },
+
+        // Footer sections (all 3 responsive variants)
+        { selector: '.framer-G4Xxn', anim: 'anim-fade-in-up', delay: 0 },
+
+        // Footer social icons
+        { selector: '[data-framer-name="Social"] > a, [data-framer-name="Socials"] > a', anim: 'anim-scale-in', stagger: true, staggerDelay: 80 },
+
+        // Navigation sidebars
+        { selector: 'nav[data-framer-name="Desktop - Home"]', anim: 'anim-fade-in-left', delay: 200 },
+        { selector: 'nav[data-framer-name="Tablet - Home"]', anim: 'anim-fade-in-left', delay: 200 },
+        { selector: 'nav[data-framer-name="Mobile - Home"]', anim: 'anim-fade-in', delay: 200 },
+
+        // Nav menu items stagger
+        { selector: 'nav [data-framer-name="Menu Items"] > a, nav [data-framer-name="Menu Items"] > div', anim: 'anim-fade-in-left', stagger: true, staggerDelay: 80 }
+      ];
+
+      // Apply initial hidden state and set up observer
+      function init() {
+        var allElements = [];
+
+        animConfig.forEach(function(config) {
+          var els = document.querySelectorAll(config.selector);
+          els.forEach(function(el) {
+            // Don't hide if it's already visible in viewport on load (hero)
+            el.classList.add('anim-hidden');
+            allElements.push({ el: el, config: config });
+          });
+        });
+
+        // IntersectionObserver for scroll-triggered animations
+        if ('IntersectionObserver' in window) {
+          var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                var el = entry.target;
+                // Find config for this element
+                var match = allElements.find(function(item) { return item.el === el; });
+                if (match) {
+                  var config = match.config;
+                  var delay = config.delay || 0;
+
+                  if (config.stagger) {
+                    // Find siblings and calculate stagger index
+                    var parent = el.parentElement;
+                    var siblings = parent ? Array.from(parent.children).filter(function(child) {
+                      return allElements.some(function(item) { return item.el === child && item.config.selector === config.selector; });
+                    }) : [el];
+                    var index = siblings.indexOf(el);
+                    delay = index * (config.staggerDelay || 100);
+                  }
+
+                  setTimeout(function() {
+                    el.classList.remove('anim-hidden');
+                    el.classList.add(config.anim);
+                  }, delay);
+                }
+
+                observer.unobserve(el);
+              }
+            });
+          }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+          });
+
+          allElements.forEach(function(item) {
+            observer.observe(item.el);
+          });
+        } else {
+          // Fallback: show everything immediately
+          allElements.forEach(function(item) {
+            item.el.classList.remove('anim-hidden');
+          });
+        }
+      }
+
+      // Run when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
 </body>
 
 </html>
